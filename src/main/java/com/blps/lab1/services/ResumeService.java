@@ -1,23 +1,31 @@
 package com.blps.lab1.services;
 
+import com.blps.lab1.exceptions.DidNotCompletePremoderationExeption;
 import com.blps.lab1.exceptions.NoEntitiesException;
+import com.blps.lab1.exceptions.PermissionDeniedException;
 import com.blps.lab1.model.common.Status;
 import com.blps.lab1.model.emailmessage.EmailMessage;
 import com.blps.lab1.model.cv.Resume;
 import com.blps.lab1.repositories.ResumeRepository;
+import com.blps.lab1.services.jms.ResumeProducerService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
 public class ResumeService {
+    private final ResumeProducerService producerService;
     private final ResumeRepository resumeRepository;
     private final EmailService emailService;
     private final UserService userService;
+    private final PremoderationService premoderationService;
 
+    @Transactional
     public Resume create(Resume.ResumeBuilder resume, Long userId) {
         resume.createdBy(userId);
         Long time = System.currentTimeMillis();
@@ -25,6 +33,11 @@ public class ResumeService {
         resume.updatedAt(time);
         var buildedResume = resume.build();
         resumeRepository.save(buildedResume);
+        try {
+            producerService.sendMessage("resume.queue", buildedResume.serialize());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return buildedResume;
     }
 
@@ -56,10 +69,19 @@ public class ResumeService {
 
         Status resultStatus = isValid ? Status.APPROVED : Status.ASSIGNED;
 
+        if (resume.getPremoderationStatus() != Status.APPROVED)
+            throw new DidNotCompletePremoderationExeption("Resume did not complete premoderation for offensive words.");
+
         resume.setStatus(resultStatus);
         resume.setUpdatedAt(System.currentTimeMillis());
         resumeRepository.save(resume);
+    }
 
-        var userEmail = userService.findById(resume.getCreatedBy()).getEmail();
+    @Scheduled(cron = "0 * * * * ?")
+    void notifyUsersForResume() {
+        for (Resume resume : resumeRepository.findAll()){
+            if (resume.getPremoderationStatus().equals(Status.WAITING))
+                System.out.println(resume.getId() + " содержит ненормативную лексику");
+        }
     }
 }

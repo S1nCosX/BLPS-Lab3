@@ -3,6 +3,7 @@ package com.blps.lab1.controllers;
 import com.blps.lab1.exceptions.PermissionDeniedException;
 import com.blps.lab1.model.cv.ResumeEntity;
 import com.blps.lab1.services.AccessRightsService;
+import com.blps.lab1.services.PremoderationService;
 import com.blps.lab1.services.ResumeService;
 import com.blps.lab1.services.UserService;
 import jakarta.validation.Valid;

@@ -2,12 +2,15 @@ package com.blps.lab1.model.cv;
 
 import com.blps.lab1.model.common.Status;
 import com.blps.lab1.model.common.WorkMode;
+import com.blps.lab1.services.PremoderationService;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.*;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,7 +26,8 @@ import java.util.Set;
             @Index(name = "resume_moderator_id_idx", columnList = "moderator_id"),
     }
 )
-public class Resume {
+public class Resume implements Serializable {
+
     @Id
     @GeneratedValue
     private Long id;
@@ -74,6 +78,11 @@ public class Resume {
     @Column(nullable = false)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status premoderationStatus;
+
+
     @Column(nullable = false)
     private Long createdBy;
 
@@ -84,4 +93,22 @@ public class Resume {
     private Long updatedAt = createdAt;
 
     private Long moderatorId;
+
+    public static Resume deserialize(String json) throws IOException, ClassNotFoundException {
+        byte[] data = Base64.getDecoder().decode(json);
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+        Resume resume = (Resume) objectInputStream.readObject();
+        objectInputStream.close();
+        return resume;
+    }
+
+    public String serialize() throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(this);
+        objectOutputStream.close();
+        return Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray());
+
+    }
 }

@@ -63,6 +63,7 @@ public class ResumeEntity {
                 .firstName(firstName)
                 .lastName(lastName)
                 .status(Status.WAITING)
+                .premoderationStatus(Status.WAITING)
                 .email(email)
                 .city(city)
                 .sex(sex)
