@@ -6,13 +6,7 @@ import com.blps.lab1.model.cv.Resume;
 import com.blps.lab1.services.PremoderationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.util.Base64;
 
 @Service
 public class ResumeConsumerService {
@@ -25,13 +19,13 @@ public class ResumeConsumerService {
 
     @JmsListener(destination = "resume.queue")
     public void receiveMessage(String message) {
-        boolean containsOffensiveLanguage = premoderationService.containsOffensiveLanguage(message);
 
         // Обновление информации в базе данных
         try {
             Resume resume = Resume.deserialize(message);
+            boolean containsOffensiveLanguage = premoderationService.containsOffensiveLanguage(resume.toString());
             Resume content = resumeRepository.findById(resume.getId()).orElseThrow();
-            content.setPremoderationStatus(containsOffensiveLanguage ? Status.APPROVED : Status.WAITING);
+            content.setPremoderationStatus(!containsOffensiveLanguage ? Status.APPROVED : Status.WAITING);
             resumeRepository.save(content);
 
             System.out.println("Processed resume with ID: " + resume.getId());

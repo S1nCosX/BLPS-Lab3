@@ -9,7 +9,9 @@ public class PremoderationService {
 
     private final List<String> offensiveWords = List
             .of(
-                "попа"
+                "пися",
+                "попа",
+                "какашечка"
             ); // представим что тут банк плохих слов...
 
     public boolean containsOffensiveLanguage(String text) {
